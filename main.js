@@ -11,7 +11,8 @@ const themeToggle = document.getElementById("themeToggle");
 const MIN = 1;
 const MAX = 45;
 const PICK = 6;
-const DRAW_DELAY = 260;
+const DRAW_DELAY = 520;
+const ROLL_DELAY = 320;
 
 let isDrawing = false;
 
@@ -42,6 +43,13 @@ function createPill(num) {
   const pill = document.createElement("span");
   pill.className = "ball";
   pill.textContent = String(num).padStart(2, "0");
+  return pill;
+}
+
+function createRollingPill() {
+  const pill = document.createElement("span");
+  pill.className = "ball rolling";
+  pill.textContent = "??";
   return pill;
 }
 
@@ -131,8 +139,13 @@ async function generate() {
     resultsEl.appendChild(card);
 
     for (let j = 0; j < nums.length; j += 1) {
-      await sleep(DRAW_DELAY);
-      balls.appendChild(createPill(nums[j]));
+      const rolling = createRollingPill();
+      balls.appendChild(rolling);
+      await sleep(ROLL_DELAY);
+      rolling.classList.remove("rolling");
+      rolling.classList.add("reveal");
+      rolling.textContent = String(nums[j]).padStart(2, "0");
+      await sleep(DRAW_DELAY - ROLL_DELAY);
     }
     raw.textContent = formatSet(nums);
   }

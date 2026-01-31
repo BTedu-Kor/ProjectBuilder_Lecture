@@ -6,10 +6,14 @@ const resetBtn = document.getElementById("resetBtn");
 const setCountEl = document.getElementById("setCount");
 const sortModeEl = document.getElementById("sortMode");
 const dupModeEl = document.getElementById("dupMode");
+const themeToggle = document.getElementById("themeToggle");
 
 const MIN = 1;
 const MAX = 45;
 const PICK = 6;
+const DRAW_DELAY = 260;
+
+let isDrawing = false;
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -41,33 +45,10 @@ function createPill(num) {
   return pill;
 }
 
-function render(sets) {
-  resultsEl.innerHTML = "";
-  sets.forEach((nums, idx) => {
-    const card = document.createElement("div");
-    card.className = "result-card";
-
-    const head = document.createElement("div");
-    head.className = "result-head";
-    head.textContent = `세트 ${idx + 1}`;
-
-    const balls = document.createElement("div");
-    balls.className = "balls";
-    nums.forEach((n) => balls.appendChild(createPill(n)));
-
-    const raw = document.createElement("div");
-    raw.className = "raw";
-    raw.textContent = formatSet(nums);
-
-    card.appendChild(head);
-    card.appendChild(balls);
-    card.appendChild(raw);
-    resultsEl.appendChild(card);
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
   });
-
-  const now = new Date();
-  metaEl.textContent = `${now.toLocaleString("ko-KR")} · ${sets.length}세트`;
-  copyBtn.disabled = sets.length === 0;
 }
 
 function clampCount(value) {
@@ -76,7 +57,39 @@ function clampCount(value) {
   return Math.min(10, Math.max(1, Math.floor(n)));
 }
 
-function generate() {
+function lockControls(locked) {
+  isDrawing = locked;
+  generateBtn.disabled = locked;
+  copyBtn.disabled = locked;
+  resetBtn.disabled = locked;
+  setCountEl.disabled = locked;
+  sortModeEl.disabled = locked;
+  dupModeEl.disabled = locked;
+}
+
+function updateThemeButton(theme) {
+  const icon = theme === "dark" ? "🌙" : "☀️";
+  const label = theme === "dark" ? "Dark" : "Light";
+  themeToggle.querySelector(".theme-icon").textContent = icon;
+  themeToggle.querySelector(".theme-label").textContent = label;
+  themeToggle.setAttribute("aria-label", `${label} 모드`);
+}
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem("theme", theme);
+  updateThemeButton(theme);
+}
+
+function initTheme() {
+  const stored = localStorage.getItem("theme");
+  const preferDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+  const theme = stored || (preferDark ? "dark" : "light");
+  applyTheme(theme);
+}
+
+async function generate() {
+  if (isDrawing) return;
   const count = clampCount(setCountEl.value);
   setCountEl.value = count;
 
@@ -90,8 +103,43 @@ function generate() {
     sets.push(nums);
   }
 
-  render(sets);
+  resultsEl.innerHTML = "";
+  resultsEl.dataset.lastSets = "";
+  const now = new Date();
+  metaEl.textContent = `${now.toLocaleString("ko-KR")} · ${sets.length}세트 생성 중...`;
+  lockControls(true);
+
+  for (let i = 0; i < sets.length; i += 1) {
+    const nums = sets[i];
+    const card = document.createElement("div");
+    card.className = "result-card";
+
+    const head = document.createElement("div");
+    head.className = "result-head";
+    head.textContent = `세트 ${i + 1}`;
+
+    const balls = document.createElement("div");
+    balls.className = "balls";
+
+    const raw = document.createElement("div");
+    raw.className = "raw";
+    raw.textContent = "추첨 중...";
+
+    card.appendChild(head);
+    card.appendChild(balls);
+    card.appendChild(raw);
+    resultsEl.appendChild(card);
+
+    for (let j = 0; j < nums.length; j += 1) {
+      await sleep(DRAW_DELAY);
+      balls.appendChild(createPill(nums[j]));
+    }
+    raw.textContent = formatSet(nums);
+  }
+
   resultsEl.dataset.lastSets = JSON.stringify(sets);
+  metaEl.textContent = `${now.toLocaleString("ko-KR")} · ${sets.length}세트`;
+  lockControls(false);
 }
 
 function reset() {
@@ -123,5 +171,10 @@ function copyToClipboard() {
 generateBtn.addEventListener("click", generate);
 resetBtn.addEventListener("click", reset);
 copyBtn.addEventListener("click", copyToClipboard);
+themeToggle.addEventListener("click", () => {
+  const next = document.body.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(next);
+});
 
+initTheme();
 reset();

@@ -11,6 +11,16 @@
 </head>
 <body>
   <main class="app">
+    <nav class="top-nav" aria-label="주요 메뉴">
+      <a href="#generator">번호 생성</a>
+      <a href="#results">결과</a>
+      <a href="#guide">가이드</a>
+      <a href="#contact">제휴 문의</a>
+      <a href="#comments">댓글</a>
+      <a href="#about">사이트 정보</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
     <header class="hero">
       <p class="eyebrow">Random · Fair · Fast</p>
       <div class="hero-row">
@@ -25,7 +35,7 @@
       </div>
     </header>
 
-    <section class="panel" aria-label="설정">
+    <section id="generator" class="panel" aria-label="설정">
       <div class="controls">
         <label class="field">
           <span>세트 수</span>
@@ -54,7 +64,7 @@
       </div>
     </section>
 
-    <section class="panel" aria-label="결과">
+    <section id="results" class="panel" aria-label="결과">
       <div class="panel-header">
         <h2>생성 결과</h2>
         <p id="meta" class="meta">아직 생성된 번호가 없습니다.</p>
@@ -62,7 +72,52 @@
       <div id="results" class="results" role="status" aria-live="polite"></div>
     </section>
 
-    <section class="panel" aria-label="제휴 문의">
+    <section id="guide" class="panel" aria-label="로또 가이드">
+      <div class="panel-header">
+        <h2>로또 가이드</h2>
+        <p class="meta">무작위 추첨의 의미와 책임 있는 이용을 안내합니다.</p>
+      </div>
+      <div class="content-grid">
+        <article class="content-card">
+          <h3>무작위 추첨이란?</h3>
+          <p>
+            이 페이지의 번호는 1~45 범위에서 무작위로 생성됩니다. 선택 과정은 예측할 수 없으며,
+            동일한 결과가 다시 나올 수 있습니다.
+          </p>
+        </article>
+        <article class="content-card">
+          <h3>사용 방법</h3>
+          <ol class="content-list">
+            <li>세트 수와 정렬 옵션을 선택합니다.</li>
+            <li>번호 생성 버튼을 누릅니다.</li>
+            <li>결과를 복사해 메모로 저장할 수 있습니다.</li>
+          </ol>
+        </article>
+        <article class="content-card">
+          <h3>독창적 콘텐츠</h3>
+          <p>
+            단순한 번호 출력이 아닌, 결과 복사, 다크 모드, 애니메이션 추첨 등 사용자 경험을 강화하는
+            기능을 제공합니다.
+          </p>
+        </article>
+        <article class="content-card">
+          <h3>책임 있는 이용</h3>
+          <p>
+            확률은 매우 낮습니다. 오락과 참고용으로만 이용하시고, 과도한 지출은 피하세요.
+          </p>
+        </article>
+      </div>
+      <div class="policy-box">
+        <h3>운영 원칙</h3>
+        <ul class="content-list">
+          <li>광고보다 콘텐츠와 사용자 경험을 우선합니다.</li>
+          <li>오해를 유발하는 과장 문구를 사용하지 않습니다.</li>
+          <li>정보와 기능을 쉽게 찾을 수 있는 구조를 유지합니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="contact" class="panel" aria-label="제휴 문의">
       <div class="panel-header">
         <h2>제휴 문의</h2>
         <p class="meta">아래 폼으로 간단히 남겨주세요.</p>
@@ -92,7 +147,7 @@
       </form>
     </section>
 
-    <section class="panel" aria-label="댓글">
+    <section id="comments" class="panel" aria-label="댓글">
       <div class="panel-header">
         <h2>댓글</h2>
         <p class="meta">Disqus로 의견을 남겨주세요.</p>
@@ -118,8 +173,56 @@
       <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
     </section>
 
+    <section id="about" class="panel" aria-label="사이트 정보">
+      <div class="panel-header">
+        <h2>사이트 정보</h2>
+        <p class="meta">누구를 위한 사이트인지, 무엇을 제공하는지 알려드립니다.</p>
+      </div>
+      <div class="content-stack">
+        <p>
+          이 사이트는 로또 번호를 빠르고 공정하게 생성해주는 도구입니다.
+          광고보다 콘텐츠를 우선하고, 사용자 경험을 개선하는 기능을 지속적으로 업데이트합니다.
+        </p>
+        <p>
+          개인정보는 최소한으로 다루며, 제휴 문의는 Formspree를 통해 전송됩니다.
+          댓글은 Disqus를 통해 제공됩니다. 제3자 서비스 사용에 따라 쿠키/로그가 수집될 수 있습니다.
+        </p>
+        <p class="meta">마지막 업데이트: 2026-01-31</p>
+      </div>
+    </section>
+
+    <section id="faq" class="panel" aria-label="자주 묻는 질문">
+      <div class="panel-header">
+        <h2>FAQ</h2>
+        <p class="meta">자주 묻는 질문을 정리했습니다.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>번호는 어떻게 생성되나요?</summary>
+          <p>브라우저의 난수 함수를 사용해 1~45 범위에서 무작위로 생성됩니다.</p>
+        </details>
+        <details>
+          <summary>생성 결과는 저장되나요?</summary>
+          <p>아니요. 브라우저에만 표시되며 서버에 저장하지 않습니다.</p>
+        </details>
+        <details>
+          <summary>광고가 많은가요?</summary>
+          <p>콘텐츠 가치를 해치지 않도록 광고 수를 최소로 유지합니다.</p>
+        </details>
+        <details>
+          <summary>문의는 어디로 가나요?</summary>
+          <p>제휴 문의 폼(Formspree)으로 전달되며, 확인 후 답변드립니다.</p>
+        </details>
+        <details>
+          <summary>댓글은 어떻게 관리되나요?</summary>
+          <p>부적절한 댓글은 운영 기준에 따라 숨김 또는 삭제될 수 있습니다.</p>
+        </details>
+      </div>
+    </section>
+
     <footer class="footer">
       <p>이 페이지는 무작위 생성 도구이며, 당첨을 보장하지 않습니다.</p>
+      <p class="footer-note">© 2026 Lotto Studio. All rights reserved.</p>
     </footer>
   </main>
 

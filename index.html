@@ -60,6 +60,36 @@
       <div id="results" class="results" role="status" aria-live="polite"></div>
     </section>
 
+    <section class="panel" aria-label="제휴 문의">
+      <div class="panel-header">
+        <h2>제휴 문의</h2>
+        <p class="meta">아래 폼으로 간단히 남겨주세요.</p>
+      </div>
+      <form class="contact-form" action="https://formspree.io/f/mnjvkbrr" method="POST">
+        <label class="field">
+          <span>이름</span>
+          <input type="text" name="name" placeholder="홍길동" required />
+        </label>
+        <label class="field">
+          <span>이메일</span>
+          <input type="email" name="email" placeholder="you@example.com" required />
+        </label>
+        <label class="field">
+          <span>회사/브랜드</span>
+          <input type="text" name="company" placeholder="회사명을 입력하세요" />
+        </label>
+        <label class="field field-full">
+          <span>문의 내용</span>
+          <textarea name="message" rows="5" placeholder="간단한 문의 내용을 적어주세요." required></textarea>
+        </label>
+        <input type="hidden" name="_subject" value="로또 번호 생성기 제휴 문의" />
+        <input type="hidden" name="_captcha" value="false" />
+        <div class="actions">
+          <button type="submit" class="primary">보내기</button>
+        </div>
+      </form>
+    </section>
+
     <footer class="footer">
       <p>이 페이지는 무작위 생성 도구이며, 당첨을 보장하지 않습니다.</p>
     </footer>

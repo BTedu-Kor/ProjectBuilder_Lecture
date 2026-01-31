@@ -157,8 +157,20 @@ select {
   color: var(--ink);
 }
 
+textarea {
+  font: inherit;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  background: #fff;
+  color: var(--ink);
+  resize: vertical;
+  min-height: 140px;
+}
+
 body[data-theme="dark"] input,
-body[data-theme="dark"] select {
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea {
   background: #0f171d;
   border-color: rgba(255, 255, 255, 0.1);
 }
@@ -216,6 +228,15 @@ button:disabled {
 .results {
   display: grid;
   gap: 16px;
+}
+
+.contact-form {
+  display: grid;
+  gap: 16px;
+}
+
+.field-full {
+  grid-column: 1 / -1;
 }
 
 .result-card {

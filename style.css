@@ -230,6 +230,10 @@ button:disabled {
   gap: 16px;
 }
 
+.panel #disqus_thread {
+  margin-top: 8px;
+}
+
 .contact-form {
   display: grid;
   gap: 16px;

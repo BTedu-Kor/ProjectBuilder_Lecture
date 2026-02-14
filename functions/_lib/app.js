@@ -102,41 +102,130 @@ export function sanitizeInputText(text) {
   return { text: value, flags: Array.from(new Set(flags)) };
 }
 
+export function classifyOpenAIError(detail) {
+  const text = String(detail || "");
+  if (text.includes("OPENAI_API_KEY is missing") || /\b401\b/.test(text) || /invalid_api_key/i.test(text)) {
+    return {
+      status: 500,
+      flag: "server_config_error",
+      message: "서버 API 키 설정 오류로 응답을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  if (/\b429\b/.test(text) || /quota|rate limit|insufficient_quota/i.test(text)) {
+    return {
+      status: 502,
+      flag: "upstream_quota_error",
+      message: "AI 서버 사용량 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  if (/\b404\b/.test(text) || /model.*(not found|does not exist)|invalid model/i.test(text)) {
+    return {
+      status: 500,
+      flag: "model_config_error",
+      message: "서버 모델 설정 오류로 응답을 생성할 수 없습니다. 관리자 설정을 확인해 주세요.",
+    };
+  }
+
+  if (/\b400\b/.test(text) && /response_format|json_object/i.test(text)) {
+    return {
+      status: 502,
+      flag: "upstream_request_error",
+      message: "AI 응답 형식 협상 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  return {
+    status: 502,
+    flag: "upstream_error",
+    message: "가능성 기반 리허설 응답 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  };
+}
+
 export async function callOpenAI(env, systemPrompt, userPayload) {
   if (!env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is missing");
   }
 
-  const body = {
-    model: env.OPENAI_MODEL || "gpt-4.1-mini",
-    temperature: 0.5,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: JSON.stringify(userPayload) },
-    ],
-  };
+  const requestedModel = String(env.OPENAI_MODEL || "").trim();
+  const modelCandidates = Array.from(new Set([requestedModel || "gpt-4.1-mini", "gpt-4.1-mini", "gpt-4o-mini"]));
+  const baseMessages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: JSON.stringify(userPayload) },
+  ];
+  let lastError = "unknown_openai_error";
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
+  for (const model of modelCandidates) {
+    const bodyWithJsonFormat = {
+      model,
+      temperature: 0.5,
+      response_format: { type: "json_object" },
+      messages: baseMessages,
+    };
 
-  if (!response.ok) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify(bodyWithJsonFormat),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const raw = data?.choices?.[0]?.message?.content || "{}";
+      if (typeof raw === "string") {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return {};
+        }
+      }
+      return raw && typeof raw === "object" ? raw : {};
+    }
+
     const detail = await response.text();
-    throw new Error(`OpenAI error: ${response.status} ${detail}`);
+    lastError = `OpenAI error: ${response.status} ${detail}`;
+
+    const canRetryWithoutJsonFormat =
+      response.status === 400 && /response_format|json_object|unsupported/i.test(detail);
+    if (!canRetryWithoutJsonFormat) {
+      continue;
+    }
+
+    const bodyWithoutJsonFormat = {
+      model,
+      temperature: 0.5,
+      messages: baseMessages,
+    };
+
+    const fallbackResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify(bodyWithoutJsonFormat),
+    });
+
+    if (fallbackResponse.ok) {
+      const data = await fallbackResponse.json();
+      const raw = data?.choices?.[0]?.message?.content || "{}";
+      if (typeof raw === "string") {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return {};
+        }
+      }
+      return raw && typeof raw === "object" ? raw : {};
+    }
+
+    const fallbackDetail = await fallbackResponse.text();
+    lastError = `OpenAI error: ${fallbackResponse.status} ${fallbackDetail}`;
   }
 
-  const data = await response.json();
-  const raw = data?.choices?.[0]?.message?.content || "{}";
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
+  throw new Error(lastError);
 }

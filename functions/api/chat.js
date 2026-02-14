@@ -1,6 +1,7 @@
 import {
   buildFallback,
   callOpenAI,
+  classifyOpenAIError,
   dayKeySeoul,
   getLimit,
   increaseUsage,
@@ -96,20 +97,17 @@ export async function onRequestPost(context) {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error("[api/chat] OpenAI call failed", detail);
-
-    const configError = detail.includes("OPENAI_API_KEY is missing");
+    const classified = classifyOpenAIError(detail);
     const usage = currentUsage;
     return jsonResponse(
       buildFallback(
         {
-          personaReply: configError
-            ? "서버 설정 오류로 응답을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요."
-            : "가능성 기반 리허설 응답 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          personaReply: classified.message,
         },
         usage,
-        Array.from(new Set([...message.flags, configError ? "server_config_error" : "upstream_error"]))
+        Array.from(new Set([...message.flags, classified.flag]))
       ),
-      configError ? 500 : 502
+      classified.status
     );
   }
 }

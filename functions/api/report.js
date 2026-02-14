@@ -1,4 +1,5 @@
 import {
+  buildLocalReportFallback,
   buildFallback,
   callOpenAI,
   classifyOpenAIError,
@@ -73,6 +74,18 @@ export async function onRequestPost(context) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error("[api/report] OpenAI call failed", detail);
     const classified = classifyOpenAIError(detail);
+    const safetyFlags = Array.from(new Set([...lastUserMessage.flags, classified.flag]));
+
+    if (classified.flag === "upstream_quota_error") {
+      return jsonResponse(
+        buildFallback(
+          buildLocalReportFallback(log, lastUserMessage.text),
+          usage,
+          Array.from(new Set([...safetyFlags, "local_fallback_active"]))
+        ),
+        200
+      );
+    }
 
     return jsonResponse(
       buildFallback(
@@ -80,7 +93,7 @@ export async function onRequestPost(context) {
           personaReply: classified.message.replace("응답", "리포트"),
         },
         usage,
-        Array.from(new Set([...lastUserMessage.flags, classified.flag]))
+        safetyFlags
       ),
       classified.status
     );

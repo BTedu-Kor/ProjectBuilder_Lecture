@@ -29,10 +29,14 @@
   - `OPENAI_API_KEY` = OpenAI API Key
   - (선택) `FREE_TURN_LIMIT` = 일일 무료 턴 수 (기본 20)
   - (선택) `OPENAI_MODEL` = 기본 `gpt-4.1-mini`
+  - (선택) `HEALTHCHECK_TOKEN` = `/api/health` 보호 토큰
 
 ## API
 - `POST /api/chat`
 - `POST /api/report`
+- `GET /api/health` (선택 토큰: `x-health-token` 헤더 또는 `?token=...`)
+
+`/api/chat`, `/api/report`는 OpenAI 쿼터(429)일 때 로컬 임시 코칭/리포트로 자동 폴백합니다.
 
 두 API 모두 아래 응답 스키마를 사용합니다.
 

@@ -143,6 +143,53 @@ export function classifyOpenAIError(detail) {
   };
 }
 
+function inferEmotionNeeds(text) {
+  const value = String(text || "");
+  if (/(미안|죄송|잘못|실수)/.test(value)) {
+    return { emotionGuess: ["후회", "불안"], needsGuess: ["이해", "관계회복"] };
+  }
+  if (/(화나|짜증|열받|빡쳐|분노)/.test(value)) {
+    return { emotionGuess: ["분노", "답답함"], needsGuess: ["존중", "경계"] };
+  }
+  if (/(걱정|불안|무서|두려|긴장)/.test(value)) {
+    return { emotionGuess: ["불안", "긴장"], needsGuess: ["안전감", "예측가능성"] };
+  }
+  return { emotionGuess: ["혼란", "방어적"], needsGuess: ["존중", "안전감"] };
+}
+
+export function buildLocalChatFallback(messageText) {
+  const inferred = inferEmotionNeeds(messageText);
+  return {
+    personaReply:
+      "지금은 AI 서버 한도로 임시 코칭을 제공합니다. 상대는 불편함이나 방어감을 느꼈을 가능성이 있으니, 단정 대신 확인 질문으로 대화를 여세요. 예: \"내 말 중에 가장 불편했던 지점이 뭐였는지 알려줄래?\"",
+    emotionGuess: inferred.emotionGuess,
+    needsGuess: inferred.needsGuess,
+    rewriteSuggestions: [
+      { label: "공감형", text: "그렇게 느꼈을 수 있겠다고 생각해. 네가 불편했던 지점을 먼저 듣고 싶어." },
+      { label: "단호형", text: "비난 없이 사실과 감정을 나눠서 말해줘. 나는 그 기준에서 대화하고 싶어." },
+      { label: "짧게", text: "지금 감정이 올라와서, 핵심 한 가지부터 맞춰보자." },
+    ],
+    safetyFlags: ["local_fallback_active"],
+  };
+}
+
+export function buildLocalReportFallback(chatLog, lastUserMessage) {
+  const inferred = inferEmotionNeeds(lastUserMessage);
+  const turnCount = Array.isArray(chatLog) ? chatLog.length : 0;
+  return {
+    personaReply:
+      `AI 서버 한도로 임시 리포트를 제공합니다. 현재까지 ${turnCount}턴 대화 기준으로, 상대 반응을 단정하기보다 확인 질문을 먼저 두는 흐름이 더 안전합니다.`,
+    emotionGuess: inferred.emotionGuess,
+    needsGuess: inferred.needsGuess,
+    rewriteSuggestions: [
+      { label: "공감형", text: "내가 놓친 지점이 있었을 수 있어. 너 입장에서 가장 힘들었던 부분부터 듣고 싶어." },
+      { label: "단호형", text: "서로 존중하는 표현으로만 이야기하자. 그 선 안에서 문제를 정리해보자." },
+      { label: "짧게", text: "감정이 큰 상태라서, 핵심 한 문장씩만 말해보자." },
+    ],
+    safetyFlags: ["local_fallback_active"],
+  };
+}
+
 export async function callOpenAI(env, systemPrompt, userPayload) {
   if (!env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is missing");

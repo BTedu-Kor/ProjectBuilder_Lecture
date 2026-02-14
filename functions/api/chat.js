@@ -1,4 +1,5 @@
 import {
+  buildLocalChatFallback,
   buildFallback,
   callOpenAI,
   classifyOpenAIError,
@@ -99,13 +100,26 @@ export async function onRequestPost(context) {
     console.error("[api/chat] OpenAI call failed", detail);
     const classified = classifyOpenAIError(detail);
     const usage = currentUsage;
+    const safetyFlags = Array.from(new Set([...message.flags, classified.flag]));
+
+    if (classified.flag === "upstream_quota_error") {
+      return jsonResponse(
+        buildFallback(
+          buildLocalChatFallback(message.text),
+          usage,
+          Array.from(new Set([...safetyFlags, "local_fallback_active"]))
+        ),
+        200
+      );
+    }
+
     return jsonResponse(
       buildFallback(
         {
           personaReply: classified.message,
         },
         usage,
-        Array.from(new Set([...message.flags, classified.flag]))
+        safetyFlags
       ),
       classified.status
     );

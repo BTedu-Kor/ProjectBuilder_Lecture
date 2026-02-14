@@ -3,226 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>로또 번호 생성기</title>
-  <meta name="description" content="1~45 범위에서 중복 없이 로또 번호를 생성합니다." />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8998672766517840"
-     crossorigin="anonymous"></script>
+  <title>대화 리허설 + 공감 코칭 MVP</title>
+  <meta name="description" content="상대 마음을 확정하지 않고, 대화를 리허설하는 공감 코칭 도구" />
   <link href="/style.css" rel="stylesheet" />
 </head>
 <body>
   <main class="app">
-    <nav class="top-nav" aria-label="주요 메뉴">
-      <a href="#generator">번호 생성</a>
-      <a href="#results">결과</a>
-      <a href="#guide">가이드</a>
-      <a href="#contact">제휴 문의</a>
-      <a href="#comments">댓글</a>
-      <a href="#about">사이트 정보</a>
-      <a href="#faq">FAQ</a>
-    </nav>
-
     <header class="hero">
-      <p class="eyebrow">Random · Fair · Fast</p>
-      <div class="hero-row">
-        <div>
-          <h1>로또 번호 생성기</h1>
-          <p class="subtitle">버튼 한 번으로 1~45 숫자 6개를 뽑아드립니다.</p>
-        </div>
-        <button id="themeToggle" class="theme-toggle" aria-label="다크 모드 토글">
-          <span class="theme-icon" aria-hidden="true">☀️</span>
-          <span class="theme-label">Light</span>
-        </button>
-      </div>
+      <p class="eyebrow">Rehearsal · Empathy · Practice</p>
+      <h1>대화 리허설 + 공감 코칭</h1>
+      <p class="subtitle">상대의 마음을 확정하는 도구가 아니라, 가능한 반응을 가정해 연습하는 리허설 도구입니다.</p>
     </header>
 
-    <section id="generator" class="panel" aria-label="설정">
+    <nav class="top-nav" aria-label="페이지 이동">
+      <a href="#/setup">설정</a>
+      <a href="#/chat">채팅</a>
+      <a href="#/report">리포트</a>
+    </nav>
+
+    <section id="setup" class="panel route" aria-label="설정 화면">
+      <div class="panel-header">
+        <h2>/setup</h2>
+      </div>
+      <p class="notice">
+        안내: 이 서비스는 상대 마음을 확정적으로 맞히는 도구가 아닙니다. 가능성과 가정을 바탕으로 대화를 연습하는 리허설 도구입니다.
+      </p>
       <div class="controls">
         <label class="field">
-          <span>세트 수</span>
-          <input id="setCount" type="number" min="1" max="10" value="1" />
-        </label>
-        <label class="field">
-          <span>정렬</span>
-          <select id="sortMode">
-            <option value="asc" selected>오름차순</option>
-            <option value="none">랜덤 순서</option>
+          <span>대화 유형</span>
+          <select id="conversationType">
+            <option value="child" selected>자녀와의 대화</option>
+            <option value="romance">썸/연애 대화</option>
           </select>
         </label>
         <label class="field">
-          <span>중복 허용</span>
-          <select id="dupMode">
-            <option value="no" selected>허용 안 함</option>
-            <option value="yes">허용</option>
+          <span>상대 나이대</span>
+          <select id="ageGroup">
+            <option value="10대 이하">10대 이하</option>
+            <option value="20대" selected>20대</option>
+            <option value="30대">30대</option>
+            <option value="40대 이상">40대 이상</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>성별(선택)</span>
+          <select id="gender">
+            <option value="">선택 안 함</option>
+            <option value="여성">여성</option>
+            <option value="남성">남성</option>
+            <option value="기타/응답 원치 않음">기타/응답 원치 않음</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>MBTI(선택, 참고용)</span>
+          <input id="mbti" type="text" maxlength="4" placeholder="예: INFP" />
+        </label>
+        <label class="field">
+          <span>성향 프리셋</span>
+          <select id="personaPreset">
+            <option value="예민" selected>예민</option>
+            <option value="무덤덤">무덤덤</option>
+            <option value="불안형">불안형</option>
+            <option value="자존감 낮음">자존감 낮음</option>
+            <option value="회피형">회피형</option>
           </select>
         </label>
       </div>
-
       <div class="actions">
-        <button id="generateBtn" class="primary">번호 생성</button>
-        <button id="copyBtn" class="ghost" disabled>복사</button>
-        <button id="resetBtn" class="ghost">초기화</button>
+        <button id="startChatBtn" class="primary">이 설정으로 연습 시작</button>
       </div>
     </section>
 
-    <section id="results" class="panel" aria-label="결과">
+    <section id="chat" class="panel route" aria-label="채팅 화면" hidden>
       <div class="panel-header">
-        <h2>생성 결과</h2>
-        <p id="meta" class="meta">아직 생성된 번호가 없습니다.</p>
+        <h2>/chat</h2>
+        <p id="usageBadge" class="meta">오늘 남은 무료 턴: -</p>
       </div>
-      <div id="results" class="results" role="status" aria-live="polite"></div>
-    </section>
-
-    <section id="guide" class="panel" aria-label="로또 가이드">
-      <div class="panel-header">
-        <h2>로또 가이드</h2>
-        <p class="meta">무작위 추첨의 의미와 책임 있는 이용을 안내합니다.</p>
-      </div>
-      <div class="content-grid">
-        <article class="content-card">
-          <h3>무작위 추첨이란?</h3>
-          <p>
-            이 페이지의 번호는 1~45 범위에서 무작위로 생성됩니다. 선택 과정은 예측할 수 없으며,
-            동일한 결과가 다시 나올 수 있습니다.
-          </p>
-        </article>
-        <article class="content-card">
-          <h3>사용 방법</h3>
-          <ol class="content-list">
-            <li>세트 수와 정렬 옵션을 선택합니다.</li>
-            <li>번호 생성 버튼을 누릅니다.</li>
-            <li>결과를 복사해 메모로 저장할 수 있습니다.</li>
-          </ol>
-        </article>
-        <article class="content-card">
-          <h3>독창적 콘텐츠</h3>
-          <p>
-            단순한 번호 출력이 아닌, 결과 복사, 다크 모드, 애니메이션 추첨 등 사용자 경험을 강화하는
-            기능을 제공합니다.
-          </p>
-        </article>
-        <article class="content-card">
-          <h3>책임 있는 이용</h3>
-          <p>
-            확률은 매우 낮습니다. 오락과 참고용으로만 이용하시고, 과도한 지출은 피하세요.
-          </p>
-        </article>
-      </div>
-      <div class="policy-box">
-        <h3>운영 원칙</h3>
-        <ul class="content-list">
-          <li>광고보다 콘텐츠와 사용자 경험을 우선합니다.</li>
-          <li>오해를 유발하는 과장 문구를 사용하지 않습니다.</li>
-          <li>정보와 기능을 쉽게 찾을 수 있는 구조를 유지합니다.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="contact" class="panel" aria-label="제휴 문의">
-      <div class="panel-header">
-        <h2>제휴 문의</h2>
-        <p class="meta">아래 폼으로 간단히 남겨주세요.</p>
-      </div>
-      <form class="contact-form" action="https://formspree.io/f/mnjvkbrr" method="POST">
-        <label class="field">
-          <span>이름</span>
-          <input type="text" name="name" placeholder="홍길동" required />
-        </label>
-        <label class="field">
-          <span>이메일</span>
-          <input type="email" name="email" placeholder="you@example.com" required />
-        </label>
-        <label class="field">
-          <span>회사/브랜드</span>
-          <input type="text" name="company" placeholder="회사명을 입력하세요" />
-        </label>
-        <label class="field field-full">
-          <span>문의 내용</span>
-          <textarea name="message" rows="5" placeholder="간단한 문의 내용을 적어주세요." required></textarea>
-        </label>
-        <input type="hidden" name="_subject" value="로또 번호 생성기 제휴 문의" />
-        <input type="hidden" name="_captcha" value="false" />
-        <div class="actions">
-          <button type="submit" class="primary">보내기</button>
+      <p id="chatNotice" class="meta">
+        개인정보(실명/학교/연락처/주소)는 입력하지 마세요. 입력 시 마스킹 또는 경고가 적용됩니다.
+      </p>
+      <div class="chat-layout">
+        <div class="chat-column">
+          <div id="chatLog" class="chat-log" role="log" aria-live="polite"></div>
+          <div class="composer">
+            <label class="field field-full" for="userInput">
+              <span>내 문장</span>
+              <textarea id="userInput" rows="3" placeholder="상황에 맞는 문장을 입력하세요."></textarea>
+            </label>
+            <div class="actions">
+              <button id="sendBtn" class="primary">보내기</button>
+              <button id="goReportBtn" class="ghost">리포트 보기</button>
+            </div>
+          </div>
         </div>
-      </form>
-    </section>
 
-    <section id="comments" class="panel" aria-label="댓글">
-      <div class="panel-header">
-        <h2>댓글</h2>
-        <p class="meta">Disqus로 의견을 남겨주세요.</p>
-      </div>
-      <div id="disqus_thread"></div>
-      <script>
-        /**
-        *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-        *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
-        /*
-        var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-        };
-        */
-        (function() { // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-        s.src = 'https://productbuilder-sgxr3xv61n.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-    </section>
-
-    <section id="about" class="panel" aria-label="사이트 정보">
-      <div class="panel-header">
-        <h2>사이트 정보</h2>
-        <p class="meta">누구를 위한 사이트인지, 무엇을 제공하는지 알려드립니다.</p>
-      </div>
-      <div class="content-stack">
-        <p>
-          이 사이트는 로또 번호를 빠르고 공정하게 생성해주는 도구입니다.
-          광고보다 콘텐츠를 우선하고, 사용자 경험을 개선하는 기능을 지속적으로 업데이트합니다.
-        </p>
-        <p>
-          개인정보는 최소한으로 다루며, 제휴 문의는 Formspree를 통해 전송됩니다.
-          댓글은 Disqus를 통해 제공됩니다. 제3자 서비스 사용에 따라 쿠키/로그가 수집될 수 있습니다.
-        </p>
-        <p class="meta">마지막 업데이트: 2026-01-31</p>
+        <aside class="timeshift-panel" aria-label="타임머신 패널">
+          <h3>타임머신 패널</h3>
+          <p class="meta">내가 쓴 최근 문장을 3가지 버전으로 재작성합니다.</p>
+          <div class="actions vertical-actions">
+            <button data-rewrite="공감형" class="ghost rewrite-btn">공감형</button>
+            <button data-rewrite="단호형" class="ghost rewrite-btn">단호형</button>
+            <button data-rewrite="짧게" class="ghost rewrite-btn">짧게</button>
+          </div>
+          <div id="rewriteResult" class="rewrite-result"></div>
+        </aside>
       </div>
     </section>
 
-    <section id="faq" class="panel" aria-label="자주 묻는 질문">
+    <section id="report" class="panel route" aria-label="리포트 화면" hidden>
       <div class="panel-header">
-        <h2>FAQ</h2>
-        <p class="meta">자주 묻는 질문을 정리했습니다.</p>
+        <h2>/report</h2>
+        <button id="createReportBtn" class="primary">리포트 생성</button>
       </div>
-      <div class="faq">
-        <details>
-          <summary>번호는 어떻게 생성되나요?</summary>
-          <p>브라우저의 난수 함수를 사용해 1~45 범위에서 무작위로 생성됩니다.</p>
-        </details>
-        <details>
-          <summary>생성 결과는 저장되나요?</summary>
-          <p>아니요. 브라우저에만 표시되며 서버에 저장하지 않습니다.</p>
-        </details>
-        <details>
-          <summary>광고가 많은가요?</summary>
-          <p>콘텐츠 가치를 해치지 않도록 광고 수를 최소로 유지합니다.</p>
-        </details>
-        <details>
-          <summary>문의는 어디로 가나요?</summary>
-          <p>제휴 문의 폼(Formspree)으로 전달되며, 확인 후 답변드립니다.</p>
-        </details>
-        <details>
-          <summary>댓글은 어떻게 관리되나요?</summary>
-          <p>부적절한 댓글은 운영 기준에 따라 숨김 또는 삭제될 수 있습니다.</p>
-        </details>
+      <p class="meta">기본 저장은 OFF이며, 리포트는 요청 시에만 현재 대화 로그를 기반으로 생성됩니다.</p>
+      <div id="reportContent" class="report-content">
+        아직 생성된 리포트가 없습니다.
       </div>
     </section>
 
     <footer class="footer">
-      <p>이 페이지는 무작위 생성 도구이며, 당첨을 보장하지 않습니다.</p>
-      <p class="footer-note">© 2026 Lotto Studio. All rights reserved.</p>
+      <p>본 서비스는 가능성 기반 리허설 도구이며, 특정 감정이나 의도를 확정하지 않습니다.</p>
     </footer>
   </main>
 

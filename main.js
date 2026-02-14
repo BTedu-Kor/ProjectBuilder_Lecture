@@ -1,193 +1,281 @@
-const resultsEl = document.getElementById("results");
-const metaEl = document.getElementById("meta");
-const generateBtn = document.getElementById("generateBtn");
-const copyBtn = document.getElementById("copyBtn");
-const resetBtn = document.getElementById("resetBtn");
-const setCountEl = document.getElementById("setCount");
-const sortModeEl = document.getElementById("sortMode");
-const dupModeEl = document.getElementById("dupMode");
-const themeToggle = document.getElementById("themeToggle");
+const routes = ["setup", "chat", "report"];
 
-const MIN = 1;
-const MAX = 45;
-const PICK = 6;
-const DRAW_DELAY = 520;
-const ROLL_DELAY = 320;
+const state = {
+  clientId: "",
+  setup: {
+    conversationType: "child",
+    ageGroup: "20대",
+    gender: "",
+    mbti: "",
+    personaPreset: "예민",
+  },
+  chatLog: [],
+  lastUserMessage: "",
+  lastResponse: null,
+  usage: {
+    limit: 20,
+    used: 0,
+    remaining: 20,
+    dayKey: "-",
+  },
+};
 
-let isDrawing = false;
+const elements = {
+  setupSection: document.getElementById("setup"),
+  chatSection: document.getElementById("chat"),
+  reportSection: document.getElementById("report"),
+  conversationType: document.getElementById("conversationType"),
+  ageGroup: document.getElementById("ageGroup"),
+  gender: document.getElementById("gender"),
+  mbti: document.getElementById("mbti"),
+  personaPreset: document.getElementById("personaPreset"),
+  startChatBtn: document.getElementById("startChatBtn"),
+  chatLog: document.getElementById("chatLog"),
+  userInput: document.getElementById("userInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  goReportBtn: document.getElementById("goReportBtn"),
+  usageBadge: document.getElementById("usageBadge"),
+  rewriteResult: document.getElementById("rewriteResult"),
+  rewriteButtons: Array.from(document.querySelectorAll(".rewrite-btn")),
+  reportContent: document.getElementById("reportContent"),
+  createReportBtn: document.getElementById("createReportBtn"),
+};
 
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function getOrCreateClientId() {
+  const key = "clientId";
+  const stored = localStorage.getItem(key);
+  if (stored) return stored;
+  const created = crypto.randomUUID();
+  localStorage.setItem(key, created);
+  return created;
 }
 
-function generateSet(allowDupes) {
-  const nums = [];
-  const used = new Set();
+function currentRoute() {
+  const hash = window.location.hash || "#/setup";
+  const name = hash.replace("#/", "");
+  return routes.includes(name) ? name : "setup";
+}
 
-  while (nums.length < PICK) {
-    const n = randInt(MIN, MAX);
-    if (allowDupes || !used.has(n)) {
-      nums.push(n);
-      used.add(n);
+function renderRoute() {
+  const route = currentRoute();
+  elements.setupSection.hidden = route !== "setup";
+  elements.chatSection.hidden = route !== "chat";
+  elements.reportSection.hidden = route !== "report";
+}
+
+function updateSetupState() {
+  state.setup.conversationType = elements.conversationType.value;
+  state.setup.ageGroup = elements.ageGroup.value;
+  state.setup.gender = elements.gender.value;
+  state.setup.mbti = (elements.mbti.value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+  state.setup.personaPreset = elements.personaPreset.value;
+  elements.mbti.value = state.setup.mbti;
+}
+
+function maskPersonalInfo(text) {
+  let masked = text;
+  let detected = false;
+
+  const patterns = [
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+    /\b01[0-9][-\s]?\d{3,4}[-\s]?\d{4}\b/g,
+    /\b\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4}\b/g,
+    /(주소|학교|연락처|전화번호|실명|카톡|인스타|instagram|kakao)/gi,
+  ];
+
+  patterns.forEach((pattern) => {
+    if (pattern.test(masked)) {
+      detected = true;
+      masked = masked.replace(pattern, "[마스킹됨]");
     }
-  }
-
-  return nums;
-}
-
-function formatSet(nums) {
-  return nums.map((n) => String(n).padStart(2, "0")).join(" · ");
-}
-
-function createPill(num) {
-  const pill = document.createElement("span");
-  pill.className = "ball";
-  pill.textContent = String(num).padStart(2, "0");
-  return pill;
-}
-
-function createRollingPill() {
-  const pill = document.createElement("span");
-  pill.className = "ball rolling";
-  pill.textContent = "??";
-  return pill;
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
   });
+
+  return { masked, detected };
 }
 
-function clampCount(value) {
-  const n = Number(value);
-  if (Number.isNaN(n)) return 1;
-  return Math.min(10, Math.max(1, Math.floor(n)));
+function addMessage(role, text) {
+  const item = document.createElement("div");
+  item.className = `msg ${role}`;
+  item.textContent = text;
+  elements.chatLog.appendChild(item);
+  elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
 }
 
-function lockControls(locked) {
-  isDrawing = locked;
-  generateBtn.disabled = locked;
-  copyBtn.disabled = locked;
-  resetBtn.disabled = locked;
-  setCountEl.disabled = locked;
-  sortModeEl.disabled = locked;
-  dupModeEl.disabled = locked;
+function updateUsageBadge() {
+  const u = state.usage;
+  elements.usageBadge.textContent = `오늘 남은 무료 턴: ${u.remaining} (사용 ${u.used}/${u.limit}, 기준일 ${u.dayKey})`;
 }
 
-function updateThemeButton(theme) {
-  const icon = theme === "dark" ? "🌙" : "☀️";
-  const label = theme === "dark" ? "Dark" : "Light";
-  themeToggle.querySelector(".theme-icon").textContent = icon;
-  themeToggle.querySelector(".theme-label").textContent = label;
-  themeToggle.setAttribute("aria-label", `${label} 모드`);
+function renderRewriteSuggestions(data) {
+  const lines = (data.rewriteSuggestions || [])
+    .map((x) => `${x.label}: ${x.text}`)
+    .join("\n");
+  elements.rewriteResult.textContent = lines || "재작성 제안이 아직 없습니다.";
 }
 
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  localStorage.setItem("theme", theme);
-  updateThemeButton(theme);
+function renderReport(data) {
+  const emotion = (data.emotionGuess || []).join(", ") || "-";
+  const needs = (data.needsGuess || []).join(", ") || "-";
+  const rewrites = (data.rewriteSuggestions || []).map((x) => `<li><strong>${x.label}</strong>: ${escapeHtml(x.text)}</li>`).join("");
+  const flags = (data.safetyFlags || []).length
+    ? `<p><strong>안전 플래그:</strong> ${escapeHtml(data.safetyFlags.join(", "))}</p>`
+    : "";
+
+  elements.reportContent.innerHTML = `
+    <div class="report-block"><strong>감정 가능성</strong><p>${escapeHtml(emotion)}</p></div>
+    <div class="report-block"><strong>니즈 가능성</strong><p>${escapeHtml(needs)}</p></div>
+    <div class="report-block"><strong>잘한 점 / 개선점</strong><p>${escapeHtml(data.personaReply || "-")}</p></div>
+    <div class="report-block"><strong>추천 대안문장 3개</strong><ul>${rewrites}</ul></div>
+    ${flags}
+  `;
 }
 
-function initTheme() {
-  const stored = localStorage.getItem("theme");
-  const preferDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-  const theme = stored || (preferDark ? "dark" : "light");
-  applyTheme(theme);
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
-async function generate() {
-  if (isDrawing) return;
-  const count = clampCount(setCountEl.value);
-  setCountEl.value = count;
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-client-id": state.clientId,
+    },
+    body: JSON.stringify(payload),
+  });
 
-  const allowDupes = dupModeEl.value === "yes";
-  const sortMode = sortModeEl.value;
+  const data = await response.json().catch(() => ({}));
+  return { response, data };
+}
 
-  const sets = [];
-  for (let i = 0; i < count; i += 1) {
-    const nums = generateSet(allowDupes);
-    if (sortMode === "asc") nums.sort((a, b) => a - b);
-    sets.push(nums);
+async function sendChat() {
+  updateSetupState();
+  const rawText = elements.userInput.value.trim();
+  if (!rawText) return;
+
+  const { masked, detected } = maskPersonalInfo(rawText);
+  if (detected) {
+    alert("개인정보로 보이는 내용이 감지되어 일부가 [마스킹됨] 처리되었습니다.");
   }
 
-  resultsEl.innerHTML = "";
-  resultsEl.dataset.lastSets = "";
-  const now = new Date();
-  metaEl.textContent = `${now.toLocaleString("ko-KR")} · ${sets.length}세트 생성 중...`;
-  lockControls(true);
+  state.lastUserMessage = masked;
+  state.chatLog.push({ role: "user", text: masked });
+  addMessage("user", masked);
+  elements.userInput.value = "";
+  elements.sendBtn.disabled = true;
 
-  for (let i = 0; i < sets.length; i += 1) {
-    const nums = sets[i];
-    const card = document.createElement("div");
-    card.className = "result-card";
-
-    const head = document.createElement("div");
-    head.className = "result-head";
-    head.textContent = `세트 ${i + 1}`;
-
-    const balls = document.createElement("div");
-    balls.className = "balls";
-
-    const raw = document.createElement("div");
-    raw.className = "raw";
-    raw.textContent = "추첨 중...";
-
-    card.appendChild(head);
-    card.appendChild(balls);
-    card.appendChild(raw);
-    resultsEl.appendChild(card);
-
-    for (let j = 0; j < nums.length; j += 1) {
-      const rolling = createRollingPill();
-      balls.appendChild(rolling);
-      await sleep(ROLL_DELAY);
-      rolling.classList.remove("rolling");
-      rolling.classList.add("reveal");
-      rolling.textContent = String(nums[j]).padStart(2, "0");
-      await sleep(DRAW_DELAY - ROLL_DELAY);
-    }
-    raw.textContent = formatSet(nums);
-  }
-
-  resultsEl.dataset.lastSets = JSON.stringify(sets);
-  metaEl.textContent = `${now.toLocaleString("ko-KR")} · ${sets.length}세트`;
-  lockControls(false);
-}
-
-function reset() {
-  resultsEl.innerHTML = "";
-  resultsEl.dataset.lastSets = "";
-  metaEl.textContent = "아직 생성된 번호가 없습니다.";
-  copyBtn.disabled = true;
-}
-
-function copyToClipboard() {
-  const raw = resultsEl.dataset.lastSets;
-  if (!raw) return;
-  const sets = JSON.parse(raw);
-  const lines = sets.map((nums, idx) => `세트 ${idx + 1}: ${formatSet(nums)}`);
-
-  navigator.clipboard
-    .writeText(lines.join("\n"))
-    .then(() => {
-      copyBtn.textContent = "복사됨!";
-      setTimeout(() => {
-        copyBtn.textContent = "복사";
-      }, 1200);
-    })
-    .catch(() => {
-      alert("복사에 실패했습니다. 브라우저 권한을 확인해 주세요.");
+  try {
+    const { response, data } = await postJson("/api/chat", {
+      setup: state.setup,
+      message: masked,
+      chatLog: state.chatLog,
     });
+
+    if (data.usage) {
+      state.usage = data.usage;
+      updateUsageBadge();
+    }
+
+    if (response.status === 429) {
+      addMessage("assistant", "오늘 무료 턴이 소진되었습니다. 리포트를 확인하거나 내일 다시 시도해 주세요.");
+      window.location.hash = "#/report";
+      return;
+    }
+
+    if (!response.ok) {
+      addMessage("assistant", "응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    state.lastResponse = data;
+    const reply = data.personaReply || "(응답 없음)";
+    state.chatLog.push({ role: "assistant", text: reply });
+    addMessage("assistant", reply);
+    renderRewriteSuggestions(data);
+  } catch (error) {
+    addMessage("assistant", "네트워크 오류가 발생했습니다.");
+  } finally {
+    elements.sendBtn.disabled = false;
+  }
 }
 
-generateBtn.addEventListener("click", generate);
-resetBtn.addEventListener("click", reset);
-copyBtn.addEventListener("click", copyToClipboard);
-themeToggle.addEventListener("click", () => {
-  const next = document.body.dataset.theme === "dark" ? "light" : "dark";
-  applyTheme(next);
-});
+function applyRewrite(label) {
+  if (!state.lastResponse?.rewriteSuggestions) {
+    elements.rewriteResult.textContent = "먼저 대화를 보내면 재작성 제안을 받을 수 있습니다.";
+    return;
+  }
+  const picked = state.lastResponse.rewriteSuggestions.find((x) => x.label === label);
+  if (!picked) return;
+  elements.rewriteResult.textContent = `${picked.label}: ${picked.text}`;
+}
 
-initTheme();
-reset();
+async function createReport() {
+  if (!state.chatLog.length) {
+    elements.reportContent.textContent = "대화 로그가 없어 리포트를 생성할 수 없습니다.";
+    return;
+  }
+
+  elements.createReportBtn.disabled = true;
+  try {
+    const { response, data } = await postJson("/api/report", {
+      setup: state.setup,
+      chatLog: state.chatLog,
+      lastUserMessage: state.lastUserMessage,
+    });
+
+    if (!response.ok) {
+      elements.reportContent.textContent = "리포트 생성에 실패했습니다.";
+      return;
+    }
+
+    if (data.usage) {
+      state.usage = data.usage;
+      updateUsageBadge();
+    }
+
+    renderReport(data);
+  } catch (error) {
+    elements.reportContent.textContent = "네트워크 오류가 발생했습니다.";
+  } finally {
+    elements.createReportBtn.disabled = false;
+  }
+}
+
+function bindEvents() {
+  window.addEventListener("hashchange", renderRoute);
+
+  elements.startChatBtn.addEventListener("click", () => {
+    updateSetupState();
+    window.location.hash = "#/chat";
+  });
+
+  elements.sendBtn.addEventListener("click", sendChat);
+  elements.goReportBtn.addEventListener("click", () => {
+    window.location.hash = "#/report";
+  });
+
+  elements.rewriteButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      applyRewrite(button.dataset.rewrite || "");
+    });
+  });
+
+  elements.createReportBtn.addEventListener("click", createReport);
+}
+
+function init() {
+  state.clientId = getOrCreateClientId();
+  bindEvents();
+  if (!window.location.hash) {
+    window.location.hash = "#/setup";
+  }
+  renderRoute();
+  updateUsageBadge();
+}
+
+init();

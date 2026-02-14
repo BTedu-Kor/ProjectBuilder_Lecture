@@ -1,0 +1,9 @@
+name = "dialog-rehearsal-mvp"
+compatibility_date = "2026-02-14"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "projectbuilder-lecture"
+database_id = "89de517f-659f-4c40-8191-2edbcf3aceb7"
+preview_database_id = "89de517f-659f-4c40-8191-2edbcf3aceb7"

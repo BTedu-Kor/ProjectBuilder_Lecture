@@ -70,9 +70,6 @@ export async function onRequestPost(context) {
     );
   }
 
-  await increaseUsage(env.DB, dayKey, clientId);
-  const usage = await readUsage(env.DB, dayKey, clientId, limit);
-
   const setup = body?.setup || {};
   const message = sanitizeInputText(body?.message || "");
   const log = Array.isArray(body?.chatLog) ? body.chatLog.slice(-12) : [];
@@ -92,18 +89,27 @@ export async function onRequestPost(context) {
 
   try {
     const ai = await callOpenAI(env, CHAT_SYSTEM_PROMPT, openAiPayload);
+    await increaseUsage(env.DB, dayKey, clientId);
+    const usage = await readUsage(env.DB, dayKey, clientId, limit);
     const safetyFlags = Array.from(new Set([...(ai.safetyFlags || []), ...message.flags]));
     return jsonResponse(buildFallback(ai, usage, safetyFlags), 200);
-  } catch {
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[api/chat] OpenAI call failed", detail);
+
+    const configError = detail.includes("OPENAI_API_KEY is missing");
+    const usage = currentUsage;
     return jsonResponse(
       buildFallback(
         {
-          personaReply: "가능성 기반 리허설 응답 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          personaReply: configError
+            ? "서버 설정 오류로 응답을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요."
+            : "가능성 기반 리허설 응답 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         },
         usage,
-        message.flags
+        Array.from(new Set([...message.flags, configError ? "server_config_error" : "upstream_error"]))
       ),
-      200
+      configError ? 500 : 502
     );
   }
 }

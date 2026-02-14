@@ -188,7 +188,7 @@ async function sendChat() {
     }
 
     if (!response.ok) {
-      addMessage("assistant", "응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      addMessage("assistant", data.personaReply || "응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
 
@@ -229,7 +229,7 @@ async function createReport() {
     });
 
     if (!response.ok) {
-      elements.reportContent.textContent = "리포트 생성에 실패했습니다.";
+      elements.reportContent.textContent = data.personaReply || "리포트 생성에 실패했습니다.";
       return;
     }
 

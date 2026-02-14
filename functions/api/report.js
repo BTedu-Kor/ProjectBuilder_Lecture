@@ -68,17 +68,22 @@ export async function onRequestPost(context) {
 
     const safetyFlags = Array.from(new Set([...(ai.safetyFlags || []), ...lastUserMessage.flags]));
     return jsonResponse(buildFallback(ai, usage, safetyFlags), 200);
-  } catch {
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[api/report] OpenAI call failed", detail);
+    const configError = detail.includes("OPENAI_API_KEY is missing");
+
     return jsonResponse(
       buildFallback(
         {
-          personaReply:
-            "리포트 생성 중 오류가 발생했습니다. 가능성 기준으로 보면 상대는 존중/안전감 니즈가 있었을 수 있습니다. 입력을 더 구체화해 다시 시도해 주세요.",
+          personaReply: configError
+            ? "서버 설정 오류로 리포트를 생성할 수 없습니다. 잠시 후 다시 시도해 주세요."
+            : "리포트 생성 중 오류가 발생했습니다. 가능성 기준으로 보면 상대는 존중/안전감 니즈가 있었을 수 있습니다. 입력을 더 구체화해 다시 시도해 주세요.",
         },
         usage,
-        lastUserMessage.flags
+        Array.from(new Set([...lastUserMessage.flags, configError ? "server_config_error" : "upstream_error"]))
       ),
-      200
+      configError ? 500 : 502
     );
   }
 }
